@@ -164,6 +164,15 @@ export const FlexItem = styled<StyleProps, 'div'>('div')`
   ${getBoxStyle}
 `
 
+export const ButtonGroup = styled<StyleProps>(BasicBox)`
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  display: flex;
+  justify-content: center;
+  width: max-content;
+  margin: 11px auto;
+`
+
 export const PlainButton = styled<StyleProps, 'button'>('button')`
   display: ${p => p.inline ? 'inline-block' : 'block'};
   background: none;
@@ -178,6 +187,17 @@ export const PlainButton = styled<StyleProps, 'button'>('button')`
   ${getTextStyle}
 
   ${getBoxStyle}
+
+  ${ButtonGroup} & {
+    color: ${p => p.isActive ? p.theme.primary : getColor('light')};
+    font-weight: 600;
+    text-transform: uppercase;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+
+    &:last-child {
+      border-right: none;
+    }
+  }
 `
 
 export const WidgetWrapper = styled<StyleProps, 'div'>('div')`
@@ -304,26 +324,6 @@ export const UpperCaseText = styled<StyleProps, 'span'>('span')`
 `
 export const SVG = styled<StyleProps, 'svg'>('svg')`
   margin: 1rem 0;
-`
-
-export const FilterOption = styled<StyleProps>(PlainButton)`
-    color: ${p => p.isActive ? p.theme.primary : getColor('light')};
-    font-weight: 600;
-    text-transform: uppercase;
-    border-right: 1px solid rgba(255, 255, 255, 0.2);
-
-    &:last-child {
-      border-right: none;
-    }
-`
-
-export const Filters = styled<StyleProps>(BasicBox)`
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
-  display: flex;
-  justify-content: center;
-  width: max-content;
-  margin: 11px auto;
 `
 
 /**
