@@ -7,7 +7,6 @@ interface StyleProps {
   as?: any
   $bg?: string
   center?: boolean
-  clickable?: boolean
   chartWidth?: number
   chartHeight?: number
   column?: boolean
@@ -181,7 +180,7 @@ export const PlainButton = styled<StyleProps, 'button'>('button')`
   display: ${p => p.inline ? 'inline-block' : 'block'};
   background: none;
   border: none;
-  cursor: pointer;
+  cursor: ${p => p.disabled ? 'auto' : 'pointer'};
   color: ${p => getColor(p.textColor) || '#ffffff'};
 
   &:focus {
@@ -204,6 +203,24 @@ export const PlainButton = styled<StyleProps, 'button'>('button')`
       border-right: none;
     }
   }
+`
+
+export const ActionButton = styled<StyleProps, 'button'>('button')`
+  --textOpacity: ${p => p.textOpacity || 1};
+  font-family: ${p => p.theme.fontFamily.heading};
+  font-size: ${p => (p.small ? '13px' : '15px')};
+  font-weight: ${p => (p.small ? '500' : 'bold')};
+  border-radius: 20px;
+  width: ${p => (p.inline ? 'auto' : '100%')};
+  background: ${p => getColor(p.$bg) || (p.light ? 'rgba(255, 255, 255, 0.21)' : p.theme.primary)};
+  border: 0;
+  padding: ${p => (p.small ? '6px 10px' : '10px 0px')};
+  cursor: ${p => p.disabled ? 'auto' : 'pointer'};
+  color: rgba(255, 255, 255, var(--textOpacity));
+  line-height: 1;
+  text-transform: ${p => !p.upperCase ? 'none' : 'uppercase'};
+
+  ${getBoxStyle}
 `
 
 export const WidgetWrapper = styled<StyleProps, 'div'>('div')`
@@ -280,24 +297,6 @@ export const BackArrow = styled<StyleProps, 'div'>('div')`
   width: 20px;
   cursor: pointer;
   margin-left: ${p => p.marketView ? 60 : 0}px;
-`
-
-export const ActionButton = styled<StyleProps, 'button'>('button')`
-  --textOpacity: ${p => p.textOpacity || 1};
-  font-family: ${p => p.theme.fontFamily.heading};
-  font-size: ${p => (p.small ? '13px' : '15px')};
-  font-weight: ${p => (p.small ? '500' : 'bold')};
-  border-radius: 20px;
-  width: ${p => (p.inline ? 'auto' : '100%')};
-  background: ${p => getColor(p.$bg) || (p.light ? 'rgba(255, 255, 255, 0.21)' : p.theme.primary)};
-  border: 0;
-  padding: ${p => (p.small ? '6px 10px' : '10px 0px')};
-  cursor: pointer;
-  color: rgba(255, 255, 255, var(--textOpacity));
-  line-height: 1;
-  text-transform: ${p => !p.upperCase ? 'none' : 'uppercase'};
-
-  ${getBoxStyle}
 `
 
 export const ActionAnchor = styled<StyleProps, 'span'>('span')`
