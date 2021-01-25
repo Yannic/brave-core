@@ -6,6 +6,7 @@ import styled from 'styled-components'
 interface StyleProps {
   as?: any
   $bg?: string
+  breakWord?: boolean
   center?: boolean
   chartWidth?: number
   chartHeight?: number
@@ -116,6 +117,7 @@ function getColor (p: any) {
 }
 
 export const Text = styled<StyleProps, 'p'>('p')`
+  word-break: ${p => p.breakWord ? 'break-word' : 'normal'};
   color: ${p => getColor(p.textColor) || '#ffffff'};
   font-family: ${p => p.theme.fontFamily.heading};
   font-weight: ${p => (p.weight || (p.small ? '500' : 'normal'))};
@@ -214,7 +216,7 @@ export const ActionButton = styled<StyleProps, 'button'>('button')`
   font-size: ${p => (p.small ? '13px' : '15px')};
   font-weight: ${p => (p.small ? '500' : 'bold')};
   border-radius: 20px;
-  width: ${p => (p.inline ? 'auto' : '100%')};
+  width: ${p => (p.inline ? 'auto' : (p.isFullWidth === false ? 'max-content' : '100%'))};
   background: ${p => getColor(p.$bg) || (p.light ? 'rgba(255, 255, 255, 0.21)' : p.theme.primary)};
   border: 0;
   padding: ${p => (p.small ? '6px 10px' : '10px 0px')};
