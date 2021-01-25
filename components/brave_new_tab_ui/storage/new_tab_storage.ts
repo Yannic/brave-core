@@ -121,6 +121,7 @@ export const defaultState: NewTab.State = {
     losersGainers: {},
     supportedPairs: {},
     tradingPairs: [],
+    newsEvents: [],
     charts: []
   }
 }
