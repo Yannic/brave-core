@@ -55,6 +55,7 @@ interface StyleProps {
   small?: boolean
   large?: boolean
   style?: object
+  tabIndex?: number
   textAlign?: string
   textColor?: string
   userAuthed?: boolean
@@ -188,8 +189,8 @@ export const PlainButton = styled<StyleProps, 'button'>('button')`
   cursor: ${p => p.disabled ? 'auto' : 'pointer'};
   color: ${p => getColor(p.textColor) || '#ffffff'};
 
-  &:focus {
-    outline: 0;
+  &:focus:not(:focus-visible) {
+    outline: none;
   }
 
   ${getTextStyle}
@@ -308,13 +309,14 @@ export const ListItem = styled<StyleProps, 'li'>('li')`
   `};
 `
 
-export const BackArrow = styled<StyleProps, 'div'>('div')`
+export const BackArrow = styled<StyleProps>(PlainButton)`
   width: 20px;
+  padding: 0;
   cursor: pointer;
   margin-left: ${p => p.marketView ? 60 : 0}px;
 `
 
-export const ActionAnchor = styled<StyleProps, 'span'>('span')`
+export const ActionAnchor = styled<StyleProps, 'a'>('a')`
   font-family: ${p => p.theme.fontFamily.heading};
   font-size: ${p => (p.small ? '13px' : '15px')};
   font-weight: ${p => (p.small ? '500' : 'bold')};
@@ -374,10 +376,6 @@ export const InputField = styled<{}, 'input'>('input')`
   padding-left: 5px;
 
   ${getBoxStyle}
-
-  &:focus {
-    outline: 0;
-  }
 `
 
 export const AmountInputField = styled(InputField)`
