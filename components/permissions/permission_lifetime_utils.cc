@@ -5,10 +5,20 @@
 
 #include "brave/components/permissions/permission_lifetime_utils.h"
 
+#include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
 #include "components/grit/brave_components_strings.h"
+#include "components/permissions/features.h"
 #include "ui/base/l10n/l10n_util.h"
 
 namespace permissions {
+
+namespace {
+
+base::FeatureParam<int> kPermissionLifetimeTestSecondsParam{
+    &features::kPermissionLifetime, "test_seconds", 0};
+
+}  // namespace
 
 std::vector<PermissionLifetimeOption> CreatePermissionLifetimeOptions() {
   std::vector<PermissionLifetimeOption> options;
@@ -30,6 +40,16 @@ std::vector<PermissionLifetimeOption> CreatePermissionLifetimeOptions() {
       l10n_util::GetStringUTF16(IDS_PERMISSIONS_BUBBLE_FOREVER_LIFETIME_OPTION),
       base::nullopt));
   DCHECK_EQ(options.size(), kOptionsCount);
+
+  // This is strictly for manual testing.
+  const int test_seconds = kPermissionLifetimeTestSecondsParam.Get();
+  if (test_seconds) {
+    options.insert(
+        options.begin(),
+        PermissionLifetimeOption(
+            base::UTF8ToUTF16(base::StringPrintf("%d seconds", test_seconds)),
+            base::TimeDelta::FromSeconds(test_seconds)));
+  }
 
   return options;
 }
