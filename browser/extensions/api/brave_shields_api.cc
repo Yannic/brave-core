@@ -12,6 +12,7 @@
 #include "brave/browser/extensions/api/brave_action_api.h"
 #include "brave/browser/webcompat_reporter/webcompat_reporter_dialog.h"
 #include "brave/common/extensions/api/brave_shields.h"
+#include "brave/components/brave_shields/browser/ad_block_custom_filters_service.h"
 #include "brave/components/brave_shields/browser/brave_shields_p3a.h"
 #include "brave/components/brave_shields/browser/brave_shields_util.h"
 #include "brave/components/brave_shields/browser/brave_shields_web_contents_observer.h"
@@ -40,6 +41,22 @@ const char kInvalidUrlError[] = "Invalid URL.";
 const char kInvalidControlTypeError[] = "Invalid ControlType.";
 
 }  // namespace
+
+ExtensionFunction::ResponseAction
+BraveShieldsMigrateLegacyCosmeticFiltersFunction::Run() {
+  std::unique_ptr<brave_shields::MigrateLegacyCosmeticFilters::Params> params(
+      brave_shields::MigrateLegacyCosmeticFilters::Params::Create(*args_));
+  EXTENSION_FUNCTION_VALIDATE(params.get());
+
+  const bool success =
+      g_brave_browser_process->ad_block_custom_filters_service()
+          ->MigrateLegacyCosmeticFilters(
+              params->legacy_filters.additional_properties);
+
+  auto callback_args = std::make_unique<base::ListValue>();
+  callback_args->Append(base::Value(success));
+  return RespondNow(ArgumentList(std::move(callback_args)));
+}
 
 ExtensionFunction::ResponseAction BraveShieldsAllowScriptsOnceFunction::Run() {
   std::unique_ptr<brave_shields::AllowScriptsOnce::Params> params(
