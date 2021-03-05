@@ -290,6 +290,7 @@ declare namespace chrome.braveShields {
   const reportBrokenSite: any
 
   const migrateLegacyCosmeticFilters: (legacyFilters: any, callback: (success: boolean) => void) => void
+  const addSiteCosmeticFilter: (origin: string, cssSelector: string) => void
 
   type BraveShieldsViewPreferences = {
     showAdvancedView: boolean
