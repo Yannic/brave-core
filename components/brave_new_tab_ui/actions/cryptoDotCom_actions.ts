@@ -28,8 +28,8 @@ export const onCryptoDotComRefreshRequested = () => {
   return action(types.ON_REFRESH_DATA)
 }
 
-export const onCryptoDotComRefreshedDataReceived = (tickerPrices: object, losersGainers: object[], charts: object, supportedPairs?: string[]) => {
-  return action(types.REFRESHED_DATA_RECEIVED, { tickerPrices, losersGainers, charts, supportedPairs })
+export const onCryptoDotComRefreshedDataReceived = (tickerPrices: object, losersGainers: object[], charts: object, isConnected: boolean, supportedPairs?: string[]) => {
+  return action(types.REFRESHED_DATA_RECEIVED, { tickerPrices, losersGainers, charts, isConnected, supportedPairs })
 }
 
 export const onCryptoDotComBuyCrypto = () => action(types.ON_BUY_CRYPTO)

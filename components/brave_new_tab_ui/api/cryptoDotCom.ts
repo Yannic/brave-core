@@ -35,6 +35,14 @@ function getCryptoDotComSupportedPairs () {
   })
 }
 
+function getCryptoDotComConnectStatus () {
+  return new Promise((resolve: Function) => {
+    chrome.cryptoDotCom.isConnected((connected: boolean) => {
+      resolve(connected)
+    })
+  })
+}
+
 export async function fetchCryptoDotComTickerPrices (assets: string[]) {
   const assetReqs = assets.map(asset => getCryptoDotComTickerInfo(asset))
   const assetResps = await Promise.all(assetReqs).then((resps: object[]) => resps)
@@ -53,4 +61,9 @@ export async function fetchCryptoDotComCharts (assets: string[]) {
 
 export async function fetchCryptoDotComSupportedPairs () {
   return getCryptoDotComSupportedPairs().then((resp: any) => resp)
+}
+
+export async function fetchCryptoDotComConnectStatus () {
+  console.error('######################################')
+  return getCryptoDotComConnectStatus().then((connected: boolean) => connected)
 }

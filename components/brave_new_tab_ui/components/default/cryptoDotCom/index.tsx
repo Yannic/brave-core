@@ -93,6 +93,7 @@ interface State {
   currentAssetView: AssetViews
   selectedBase: string
   selectedQuote: string
+  clientUrl: string
 }
 
 interface Props {
@@ -100,6 +101,7 @@ interface Props {
   optInTotal: boolean
   optInBTCPrice: boolean
   optInMarkets: boolean
+  isConnected: boolean
   tickerPrices: Record<string, TickerPrice>
   losersGainers: Record<string, AssetRanking[]>
   supportedPairs: Record<string, string[]>
@@ -131,20 +133,30 @@ class CryptoDotCom extends React.PureComponent<Props, State> {
       currentView: MainViews.TOP,
       currentAssetView: AssetViews.DETAILS,
       selectedBase: '',
-      selectedQuote: ''
+      selectedQuote: '',
+      clientUrl: ''
     }
   }
 
   componentDidMount () {
-    const { optInBTCPrice, optInMarkets } = this.props
+    const { optInBTCPrice, optInMarkets, isConnected } = this.props
 
-    if (optInBTCPrice || optInMarkets) {
+    // TODO(simonhong): Should check connect status separately?
+    if (optInBTCPrice || optInMarkets || isConnected) {
       this.checkSetRefreshInterval()
     }
+
+    this.getClientURL()
   }
 
   componentWillUnmount () {
     this.clearIntervals()
+  }
+
+  getClientURL = () => {
+    chrome.cryptoDotCom.getClientUrl((clientUrl: string) => {
+      this.setState({ clientUrl })
+    })
   }
 
   checkSetRefreshInterval = () => {
@@ -172,11 +184,6 @@ class CryptoDotCom extends React.PureComponent<Props, State> {
       selectedBase: '',
       selectedQuote: ''
     })
-  }
-
-  handleTradeClick = () => {
-    const markets = this.props.tradingPairs.map(pair => pair.pair)
-    this.props.onViewMarketsRequested(markets)
   }
 
   optInMarkets = (show: boolean) => {
@@ -222,7 +229,7 @@ class CryptoDotCom extends React.PureComponent<Props, State> {
   }
 
   onClickConnectToCryptoDotCom = () => {
-    window.open(links.connectToCrypto, '_blank', 'noopener')
+    window.open(this.state.clientUrl, '_self', 'noopener')
   }
 
   onClickBuyPair = (pair: string) => {
@@ -292,12 +299,9 @@ class CryptoDotCom extends React.PureComponent<Props, State> {
         <Text $pt='1em' $fontSize={14}>
           {getLocale('cryptoDotComWidgetCopyOne')}
         </Text>
-        <ActionButton onClick={this.handleTradeClick} $mt={10} $mb={15}>
-          {getLocale('cryptoDotComWidgetTradeBtc')}
-        </ActionButton>
-        <PlainButton onClick={this.onClickConnectToCryptoDotCom} textColor='light' $m='0 auto'>
+        <ActionButton onClick={this.onClickConnectToCryptoDotCom} $mt={10} $mb={15}>
           {getLocale('cryptoDotComWidgetConnect')}
-        </PlainButton>
+        </ActionButton>
       </>
     )
   }
@@ -524,7 +528,7 @@ class CryptoDotCom extends React.PureComponent<Props, State> {
   }
 
   render () {
-    const { showContent, optInMarkets } = this.props
+    const { showContent, isConnected } = this.props
 
     if (!showContent) {
       return this.renderTitleTab()
@@ -538,7 +542,7 @@ class CryptoDotCom extends React.PureComponent<Props, State> {
         }}>
         <WidgetWrapper>
           {this.renderTitle()}
-          {(optInMarkets) ? (
+          {(isConnected) ? (
             this.renderIndex()
           ) : (
             this.renderPreOptIn()

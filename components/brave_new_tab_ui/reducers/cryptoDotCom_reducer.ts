@@ -114,6 +114,7 @@ const cryptoDotComReducer: Reducer<NewTab.State | undefined> = (state: NewTab.St
           ...payload.charts
         },
         losersGainers: payload.losersGainers,
+        isConnected: payload.isConnected,
         supportedPairs: payload.pairs ? reducePairs(payload.pairs) : state.cryptoDotComState.supportedPairs,
         tradingPairs: payload.pairs ? payload.pairs : state.cryptoDotComState.tradingPairs
       }

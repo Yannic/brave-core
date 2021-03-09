@@ -116,6 +116,7 @@ export const defaultState: NewTab.State = {
     optInTotal: false,
     optInBTCPrice: false,
     optInMarkets: false,
+    isConnected: false,
     fetchStatus: null,
     tickerPrices: {},
     losersGainers: {},

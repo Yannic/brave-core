@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 
+#include "base/values.h"
 #include "brave/browser/profiles/profile_util.h"
 #include "brave/common/extensions/api/crypto_dot_com.h"
 #include "brave/browser/crypto_dot_com/crypto_dot_com_service_factory.h"
@@ -247,6 +248,63 @@ CryptoDotComGetInteractionsFunction::Run() {
   interactions.SetBoolean("interacted", has_interacted);
 
   return RespondNow(OneArgument(std::move(interactions)));
+}
+
+ExtensionFunction::ResponseAction
+CryptoDotComGetAccountBalancesFunction::Run() {
+  if (!IsCryptoDotComAPIAvailable(browser_context())) {
+    return RespondNow(Error("Not available in Tor/incognito/guest profile"));
+  }
+
+  auto* service = GetCryptoDotComService(browser_context());
+  bool ret = service->GetAccountBalances(
+      base::BindOnce(
+          &CryptoDotComGetAccountBalancesFunction::OnGetAccountBalancesResult,
+          this));
+
+  if (!ret) {
+    return RespondNow(
+        Error("Could not make request for getting account balances"));
+  }
+
+  return RespondLater();
+}
+
+void CryptoDotComGetAccountBalancesFunction::OnGetAccountBalancesResult(
+    base::Value balances, bool success) {
+  Respond(TwoArguments(std::move(balances), base::Value(success)));
+}
+
+ExtensionFunction::ResponseAction CryptoDotComGetClientUrlFunction::Run() {
+  if (!IsCryptoDotComAPIAvailable(browser_context())) {
+    return RespondNow(Error("Not available in Tor/incognito/guest profile"));
+  }
+
+  auto* service = GetCryptoDotComService(browser_context());
+  return RespondNow(OneArgument(base::Value(service->GetAuthClientUrl())));
+}
+
+ExtensionFunction::ResponseAction CryptoDotComIsConnectedFunction::Run() {
+  if (!IsCryptoDotComAPIAvailable(browser_context())) {
+    return RespondNow(Error("Not available in Tor/incognito/guest profile"));
+  }
+
+  auto* service = GetCryptoDotComService(browser_context());
+  bool ret = service->IsConnected(base::BindOnce(
+      &CryptoDotComIsConnectedFunction::OnIsConnectedResult, this));
+
+  if (!ret) {
+    return RespondNow(
+        Error("Could not make request for checking connect status"));
+  }
+
+  return RespondLater();
+}
+
+void CryptoDotComIsConnectedFunction::OnIsConnectedResult(
+    bool connected) {
+  LOG(ERROR) << __func__ << " ##### " << connected;
+  Respond(OneArgument(base::Value(connected)));
 }
 
 }  // namespace api

@@ -34,7 +34,8 @@ import {
   fetchCryptoDotComTickerPrices,
   fetchCryptoDotComLosersGainers,
   fetchCryptoDotComCharts,
-  fetchCryptoDotComSupportedPairs
+  fetchCryptoDotComSupportedPairs,
+  fetchCryptoDotComConnectStatus
 } from '../../api/cryptoDotCom'
 import { generateQRData } from '../../binance-utils'
 
@@ -595,7 +596,8 @@ class NewTabPage extends React.Component<Props, State> {
     const requests = [
       fetchCryptoDotComTickerPrices(assets),
       fetchCryptoDotComLosersGainers(),
-      fetchCryptoDotComCharts(assets)
+      fetchCryptoDotComCharts(assets),
+      fetchCryptoDotComConnectStatus()
     ]
 
     // These are rarely updated, so we only need to fetch them
@@ -604,9 +606,9 @@ class NewTabPage extends React.Component<Props, State> {
       requests.push(fetchCryptoDotComSupportedPairs())
     }
 
-    const [tickerPrices, losersGainers, charts, newSupportedPairs] = await Promise.all(requests)
+    const [tickerPrices, losersGainers, charts, isConnected, newSupportedPairs] = await Promise.all(requests)
 
-    this.props.actions.onCryptoDotComRefreshedDataReceived(tickerPrices, losersGainers, charts, newSupportedPairs)
+    this.props.actions.onCryptoDotComRefreshedDataReceived(tickerPrices, losersGainers, charts, isConnected, newSupportedPairs)
   }
 
   getCurrencyList = () => {

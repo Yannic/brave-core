@@ -201,6 +201,9 @@ declare namespace chrome.cryptoDotCom {
   const getChartData: (asset: string, callback: (data: any[]) => void) => {}
   const getSupportedPairs: (callback: (pairs: any[]) => void) => {}
   const getAssetRankings: (callback: (assets: any) => void) => {}
+  const getAccountBalances: (callback: (balances: any, success: boolean) => void) => {}
+  const getClientUrl: (callback: (url: string) => void) => {}
+  const isConnected: (callback: (connected: boolean) => void) => {}
   const isSupported: (callback: (supported: boolean) => void) => {}
   const onBuyCrypto: () => void
   const onInteraction: () => void

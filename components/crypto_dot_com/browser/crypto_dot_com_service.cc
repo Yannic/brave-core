@@ -9,16 +9,23 @@
 #include <string>
 #include <utility>
 
+#include "base/base64.h"
 #include "base/bind.h"
 #include "base/containers/flat_set.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_util.h"
+#include "base/json/json_reader.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
 #include "base/task_runner_util.h"
 #include "base/time/time.h"
 #include "base/token.h"
+#include "base/values.h"
 #include "brave/components/crypto_dot_com/browser/crypto_dot_com_json_parser.h"
+#include "brave/components/crypto_dot_com/common/constants.h"
+#include "brave/components/crypto_dot_com/common/pref_names.h"
+#include "components/os_crypt/os_crypt.h"
+#include "components/prefs/pref_service.h"
 #include "components/user_prefs/user_prefs.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/storage_partition.h"
@@ -73,6 +80,7 @@ CryptoDotComService::CryptoDotComService(content::BrowserContext* context)
           content::BrowserContext::GetDefaultStoragePartition(context_)
               ->GetURLLoaderFactoryForBrowserProcess()),
       weak_factory_(this) {
+  LoadTokenFromPrefs();
 }
 
 CryptoDotComService::~CryptoDotComService() {
@@ -85,7 +93,7 @@ bool CryptoDotComService::GetTickerInfo(const std::string& asset,
   GURL url = GetURLWithPath(api_host, get_ticker_info_path);
   url = net::AppendQueryParameter(url, "instrument_name", asset);
   return NetworkRequest(
-      url, "GET", "", std::move(internal_callback));
+      url, "GET", "", net::HttpRequestHeaders(), std::move(internal_callback));
 }
 
 void CryptoDotComService::OnTickerInfo(
@@ -109,7 +117,7 @@ bool CryptoDotComService::GetChartData(const std::string& asset,
   url = net::AppendQueryParameter(url, "timeframe", "4h");
   url = net::AppendQueryParameter(url, "depth", "42");
   return NetworkRequest(
-      url, "GET", "", std::move(internal_callback));
+      url, "GET", "", net::HttpRequestHeaders(), std::move(internal_callback));
 }
 
 void CryptoDotComService::OnChartData(
@@ -131,7 +139,7 @@ bool CryptoDotComService::GetSupportedPairs(
       base::Unretained(this), std::move(callback));
   GURL url = GetURLWithPath(api_host, get_pairs_path);
   return NetworkRequest(
-      url, "GET", "", std::move(internal_callback));
+      url, "GET", "", net::HttpRequestHeaders(), std::move(internal_callback));
 }
 
 void CryptoDotComService::OnSupportedPairs(
@@ -152,8 +160,9 @@ bool CryptoDotComService::GetAssetRankings(
       &CryptoDotComService::OnAssetRankings,
       base::Unretained(this), std::move(callback));
   GURL url = GetURLWithPath(root_host, get_gainers_losers_path);
+  std::map<std::string, std::string> headers;
   return NetworkRequest(
-      url, "GET", "", std::move(internal_callback));
+      url, "GET", "", net::HttpRequestHeaders(), std::move(internal_callback));
 }
 
 void CryptoDotComService::OnAssetRankings(
@@ -168,9 +177,121 @@ void CryptoDotComService::OnAssetRankings(
   std::move(callback).Run(rankings);
 }
 
+bool CryptoDotComService::GetAccountBalances(
+    GetAccountBalancesCallback callback) {
+  auto internal_callback = base::BindOnce(
+      &CryptoDotComService::OnGetAccountBalances,
+      base::Unretained(this), std::move(callback));
+  net::HttpRequestHeaders headers;
+  headers.SetHeader("widget-token", access_token_);
+  return NetworkRequest(GURL(kCryptoDotComGetAccountBalanceURL), "GET", "",
+      headers, std::move(internal_callback));
+}
+
+void CryptoDotComService::OnGetAccountBalances(
+    GetAccountBalancesCallback callback,
+    const int status, const std::string& body,
+    const std::map<std::string, std::string>& headers) {
+  auto balances_value = base::JSONReader::Read(body);
+  if (!balances_value.has_value() || !balances_value.value().is_dict()) {
+    std::move(callback).Run(base::Value(), false);
+    return;
+  }
+
+  if (const auto* code = balances_value->FindStringKey("code")) {
+    if (*code != "0")
+      return std::move(callback).Run(base::Value(), false);
+  }
+
+  std::move(callback).Run(std::move(balances_value.value()), true);
+}
+
+bool CryptoDotComService::IsConnected(IsConnectedCallback callback) {
+  if (access_token_.empty()) {
+    std::move(callback).Run(false);
+    return true;
+  }
+
+  auto internal_callback = base::BindOnce(
+      &CryptoDotComService::OnIsConnected,
+      base::Unretained(this), std::move(callback));
+  net::HttpRequestHeaders headers;
+  headers.SetHeader("widget-token", access_token_);
+  return NetworkRequest(GURL(kCryptoDotComGetAccountBalanceURL), "GET", "",
+      headers, std::move(internal_callback));
+}
+
+void CryptoDotComService::OnIsConnected(
+    IsConnectedCallback callback,
+    const int status, const std::string& body,
+    const std::map<std::string, std::string>& headers) {
+  auto balances_value = base::JSONReader::Read(body);
+  if (!balances_value || !balances_value->is_dict()) {
+    std::move(callback).Run(false);
+    return;
+  }
+
+  // If access token is not valid anymore, returned body looks like
+  // {"code":"10002","msg":"Not logged-in","data":null}.
+  if (const auto* code = balances_value->FindStringKey("code")) {
+    if (*code == "10002")
+      return std::move(callback).Run(false);
+  }
+
+  std::move(callback).Run(true);
+}
+
+std::string CryptoDotComService::GetAuthClientUrl() const {
+  return kCryptoDotComAuthURL;
+}
+
+bool CryptoDotComService::SetAccessToken(const std::string& access_token) {
+  access_token_ = access_token;
+
+  PrefService* prefs = user_prefs::UserPrefs::Get(context_);
+  if (access_token_.empty()) {
+    prefs->SetString(kCryptoDotComAccessToken, access_token_);
+    return true;
+  }
+
+  std::string encrypted_access_token;
+  if (!OSCrypt::EncryptString(access_token, &encrypted_access_token)) {
+    LOG(ERROR) << "Could not encrypt and save crypto.com access token";
+    return false;
+  }
+
+  std::string encoded_encrypted_access_token;
+  base::Base64Encode(encrypted_access_token, &encoded_encrypted_access_token);
+  prefs->SetString(kCryptoDotComAccessToken, encoded_encrypted_access_token);
+
+  return true;
+}
+
+bool CryptoDotComService::LoadTokenFromPrefs() {
+  PrefService* prefs = user_prefs::UserPrefs::Get(context_);
+  std::string encoded_encrypted_access_token =
+      prefs->GetString(kCryptoDotComAccessToken);
+
+  std::string encrypted_access_token;
+  if (!base::Base64Decode(encoded_encrypted_access_token,
+                          &encrypted_access_token)) {
+
+    LOG(ERROR) << "Could not decode CryptoDotCom Token info";
+    return false;
+  }
+
+  if (!OSCrypt::DecryptString(encrypted_access_token, &access_token_)) {
+    LOG(ERROR) << "Could not decrypt and save Gemini access token";
+    return false;
+  }
+
+  return true;
+}
+
 bool CryptoDotComService::NetworkRequest(const GURL &url,
                                   const std::string& method,
                                   const std::string& post_data,
+                                  const net::HttpRequestHeaders& headers,
                                   URLRequestCallback callback) {
   auto request = std::make_unique<network::ResourceRequest>();
   request->url = url;
@@ -179,6 +300,7 @@ bool CryptoDotComService::NetworkRequest(const GURL &url,
                         net::LOAD_DISABLE_CACHE |
                         net::LOAD_DO_NOT_SAVE_COOKIES;
   request->method = method;
+  request->headers = headers;
 
   auto url_loader = network::SimpleURLLoader::Create(
       std::move(request), GetNetworkTrafficAnnotationTag());
@@ -231,13 +353,4 @@ void CryptoDotComService::OnURLLoaderComplete(
 
   std::move(callback).Run(
       response_code, response_body ? *response_body : "", headers);
-}
-
-base::SequencedTaskRunner* CryptoDotComService::io_task_runner() {
-  if (!io_task_runner_) {
-    io_task_runner_ = base::CreateSequencedTaskRunner(
-        {base::ThreadPool(), base::MayBlock(), base::TaskPriority::BEST_EFFORT,
-         base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN});
-  }
-  return io_task_runner_.get();
 }

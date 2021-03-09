@@ -109,6 +109,35 @@ class CryptoDotComGetInteractionsFunction :
   ResponseAction Run() override;
 };
 
+class CryptoDotComGetAccountBalancesFunction : public ExtensionFunction {
+ public:
+  DECLARE_EXTENSION_FUNCTION("cryptoDotCom.getAccountBalances", UNKNOWN)
+
+ protected:
+  ~CryptoDotComGetAccountBalancesFunction() override {}
+  ResponseAction Run() override;
+  void OnGetAccountBalancesResult(base::Value balances, bool success);
+};
+
+class CryptoDotComGetClientUrlFunction : public ExtensionFunction {
+ public:
+  DECLARE_EXTENSION_FUNCTION("cryptoDotCom.getClientUrl", UNKNOWN)
+
+ protected:
+  ~CryptoDotComGetClientUrlFunction() override {}
+  ResponseAction Run() override;
+};
+
+class CryptoDotComIsConnectedFunction : public ExtensionFunction {
+ public:
+  DECLARE_EXTENSION_FUNCTION("cryptoDotCom.isConnected", UNKNOWN)
+
+ protected:
+  ~CryptoDotComIsConnectedFunction() override {}
+  ResponseAction Run() override;
+  void OnIsConnectedResult(bool connected);
+};
+
 }  // namespace api
 }  // namespace extensions
 
